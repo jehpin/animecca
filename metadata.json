@@ -1,0 +1,6 @@
+{
+  "name": "SG School & CCA Finder",
+  "description": "Discover Singapore schools and CCAs with pastel anime school aesthetics, interactive search, and instant WhatsApp sharing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
