@@ -8,7 +8,7 @@ export interface CCAItem {
 
 export interface DistinctiveProgramme {
   schoolName: string;
-  programmeType: string; // "ALP" or "LLP"
+  programmeType: string; // "ALP" or "LLP" or "MOE"
   domain: string;
   title: string;
 }
@@ -39,6 +39,8 @@ export interface School {
   motherTongues: string[];
   ccas: CCAItem[];
   programmes: DistinctiveProgramme[];
+  moeProgrammes: string[];
+  subjects: string[];
 }
 
 export interface SearchFilterParams {
