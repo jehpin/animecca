@@ -66,6 +66,7 @@ export interface SearchResult {
     schoolCount: number;
   }[];
   featuredSuggestions: string[];
+  isPartialMatch?: boolean;
 }
 
 export interface MascotQuote {

@@ -36,6 +36,7 @@ async function startServer() {
     try {
       const {
         q,
+        query,
         level,
         zone,
         ccaCategory,
@@ -49,7 +50,7 @@ async function startServer() {
       } = req.query;
 
       const results = searchSchools({
-        query: q as string,
+        query: (q || query || '') as string,
         level: level as string,
         zone: zone as string,
         ccaCategory: ccaCategory as string,

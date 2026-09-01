@@ -274,6 +274,24 @@ export default function App() {
           onReset={handleResetFilters}
         />
 
+        {/* Partial Match Notice */}
+        {results.isPartialMatch && query.trim() && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-xs text-amber-900 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="text-base">💡</span>
+              <span>
+                No exact match for all search terms. Showing <strong>{results.total}</strong> best matching schools for <em>"{query}"</em>.
+              </span>
+            </div>
+            <button
+              onClick={handleResetFilters}
+              className="px-2.5 py-1 bg-white hover:bg-amber-100 border border-amber-300 rounded-lg font-bold text-amber-800 cursor-pointer whitespace-nowrap"
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
+
         {/* Matching CCAs Quick Tags (if user typed a query) */}
         {results.matchingCCAs.length > 0 && (
           <div className="mb-6 p-4 rounded-2xl bg-sky-50/80 border border-sky-200/80 flex flex-wrap items-center gap-2">
@@ -310,9 +328,39 @@ export default function App() {
           <div className="py-16 text-center max-w-md mx-auto p-8 rounded-3xl bg-white border border-slate-200 shadow-xs">
             <div className="text-4xl mb-3">🌸</div>
             <h3 className="text-lg font-bold text-slate-800 mb-1">No Schools Found</h3>
-            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              We couldn't find any schools matching your search. Try broadening your filters or searching for popular CCAs like "Wushu", "Band", or "Robotics".
+            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              We couldn't find any schools matching your current search and filters.
             </p>
+
+            {(level !== 'ALL' || zone !== 'ALL' || ccaCategory !== 'ALL' || nature !== 'ALL' || isAutonomous || isSap || isIp || isGifted) && (
+              <div className="mb-4 flex flex-wrap justify-center gap-1.5">
+                {level !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-slate-100 text-slate-700">
+                    Level: {level}
+                    <button onClick={() => setLevel('ALL')} className="hover:text-pink-600 font-bold ml-1">✕</button>
+                  </span>
+                )}
+                {zone !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-slate-100 text-slate-700">
+                    Zone: {zone}
+                    <button onClick={() => setZone('ALL')} className="hover:text-pink-600 font-bold ml-1">✕</button>
+                  </span>
+                )}
+                {ccaCategory !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-slate-100 text-slate-700">
+                    CCA: {ccaCategory}
+                    <button onClick={() => setCcaCategory('ALL')} className="hover:text-pink-600 font-bold ml-1">✕</button>
+                  </span>
+                )}
+                {nature !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-slate-100 text-slate-700">
+                    Nature: {nature}
+                    <button onClick={() => setNature('ALL')} className="hover:text-pink-600 font-bold ml-1">✕</button>
+                  </span>
+                )}
+              </div>
+            )}
+
             <button
               onClick={handleResetFilters}
               className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-md shadow-sky-200 transition-all cursor-pointer"
