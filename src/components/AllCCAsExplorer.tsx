@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Sparkles, Trophy, Music, Shield, Cpu } from 'lucide-react';
+import { getAllCCAsClient } from '../services/csvDataService';
 
 interface AllCCAsExplorerProps {
   isOpen: boolean;
@@ -26,16 +27,28 @@ export const AllCCAsExplorer: React.FC<AllCCAsExplorerProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    fetch('/api/ccas')
-      .then(r => r.json())
-      .then(data => {
-        setCcas(data);
+    try {
+      const clientList = getAllCCAsClient();
+      if (clientList.length > 0) {
+        setCcas(clientList);
         setLoading(false);
-      })
-      .catch(e => {
-        console.error('Failed to load CCAs:', e);
-        setLoading(false);
-      });
+        return;
+      }
+      // Fallback to fetch if client cache is empty
+      fetch('/api/ccas')
+        .then(r => r.json())
+        .then(data => {
+          setCcas(data);
+          setLoading(false);
+        })
+        .catch(e => {
+          console.error('Failed to load CCAs:', e);
+          setLoading(false);
+        });
+    } catch (e) {
+      console.error('Error getting CCAs:', e);
+      setLoading(false);
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;

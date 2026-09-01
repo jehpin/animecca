@@ -11,7 +11,13 @@ import { AllCCAsExplorer } from './components/AllCCAsExplorer';
 import { MascotWidget } from './components/MascotWidget';
 import { MASCOTS, Mascot } from './data/mascots';
 import { School, SearchResult } from './types';
-import { Sparkles, Loader2, BookOpen, AlertCircle, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  loadSchoolDataFromCSV,
+  searchSchoolsClient,
+  getRandomSchoolClient,
+  isDataLoaded,
+} from './services/csvDataService';
+import { Sparkles, AlertCircle, Database, ChevronLeft, ChevronRight, RefreshCw, FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function App() {
@@ -27,7 +33,7 @@ export default function App() {
   const [isGifted, setIsGifted] = useState(false);
   const [page, setPage] = useState(1);
 
-  // Search Results
+  // Search Results & Data Status
   const [results, setResults] = useState<SearchResult>({
     schools: [],
     total: 0,
@@ -35,6 +41,7 @@ export default function App() {
     featuredSuggestions: [],
   });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Mascot
   const [currentMascot, setCurrentMascot] = useState<Mascot>(MASCOTS.konata);
@@ -84,55 +91,62 @@ export default function App() {
     }
   }, []);
 
-  // Fetch search results
-  const fetchSchools = useCallback(async () => {
+  // Fetch / Execute search from CSV data
+  const executeSearch = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        q: query,
+      // Ensure CSV data is loaded
+      await loadSchoolDataFromCSV();
+      setLoadError(null);
+
+      const searchRes = searchSchoolsClient({
+        query,
         level: level !== 'ALL' ? level : '',
         zone: zone !== 'ALL' ? zone : '',
         ccaCategory: ccaCategory !== 'ALL' ? ccaCategory : '',
         nature: nature !== 'ALL' ? nature : '',
-        isAutonomous: isAutonomous ? 'true' : 'false',
-        isSap: isSap ? 'true' : 'false',
-        isIp: isIp ? 'true' : 'false',
-        isGifted: isGifted ? 'true' : 'false',
-        page: page.toString(),
-        limit: '30',
+        isAutonomous,
+        isSap,
+        isIp,
+        isGifted,
+        page,
+        limit: 30,
       });
 
-      const res = await fetch(`/api/search?${params.toString()}`);
-      const data: SearchResult = await res.json();
-      setResults(data);
+      setResults(searchRes);
 
       if (query.trim()) {
         setStatusMessage(
-          data.total > 0
-            ? `Found ${data.total} schools for "${query}"! Check out the activities below! ✨`
+          searchRes.total > 0
+            ? `Found ${searchRes.total} schools for "${query}"! Check out the activities below! ✨`
             : `No matching schools for "${query}". Try exploring popular CCAs or locations! 🌸`
         );
       }
-    } catch (err) {
-      console.error('Failed to search schools:', err);
+    } catch (err: any) {
+      console.error('Failed to load or parse CSV school datasets:', err);
+      setLoadError(err?.message || 'Failed to fetch and parse static CSV files');
     } finally {
       setLoading(false);
     }
   }, [query, level, zone, ccaCategory, nature, isAutonomous, isSap, isIp, isGifted, page]);
 
-  // Trigger search on filter changes with debounce for typing
+  // Initial load & search execution on filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchSchools();
-    }, 250);
+      executeSearch();
+    }, 150);
     return () => clearTimeout(timer);
-  }, [fetchSchools]);
+  }, [executeSearch]);
 
   // Handle Lucky Gacha / Random School Pick
   const handleLuckyGacha = async () => {
     try {
-      const res = await fetch('/api/random');
-      const randomSchool: School = await res.json();
+      let randomSchool = getRandomSchoolClient();
+      if (!randomSchool) {
+        await loadSchoolDataFromCSV();
+        randomSchool = getRandomSchoolClient();
+      }
+
       if (randomSchool) {
         setSelectedSchool(randomSchool);
         setStatusMessage(
@@ -218,7 +232,7 @@ export default function App() {
         }}
         onSearch={q => {
           setQuery(q);
-          fetchSchools();
+          executeSearch();
         }}
         onLuckyGacha={handleLuckyGacha}
         onSelectCategory={cat => {
@@ -233,6 +247,30 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         
+        {/* Visual Error State */}
+        {loadError && (
+          <div className="mb-8 p-6 rounded-3xl bg-rose-50 border border-rose-200 text-rose-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-2xl bg-rose-100 text-rose-600 mt-0.5">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-rose-900">Failed to Load CSV Datasets</h4>
+                <p className="text-xs text-rose-700 mt-1 leading-relaxed">
+                  {loadError}. Please ensure static CSV files exist at root paths (/general-information-of-schools.csv, /co-curricular-activities.csv, etc.).
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => executeSearch()}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shadow-sm shadow-rose-200"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Loading CSV Data</span>
+            </button>
+          </div>
+        )}
+
         {/* Filters */}
         <FilterBar
           level={level}
@@ -304,7 +342,7 @@ export default function App() {
                 key={c.ccaName}
                 onClick={() => {
                   setQuery(c.ccaName);
-                  fetchSchools();
+                  setPage(1);
                 }}
                 className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-white hover:bg-sky-100 text-sky-900 border border-sky-300 shadow-2xs transition-colors cursor-pointer"
               >
@@ -487,7 +525,8 @@ export default function App() {
           onClose={() => setIsCCADirectoryOpen(false)}
           onSelectCCA={cca => {
             setQuery(cca);
-            fetchSchools();
+            setPage(1);
+            executeSearch();
           }}
         />
       )}
